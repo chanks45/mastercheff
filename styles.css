@@ -1,0 +1,343 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Background luar transparan total */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent !important;
+  font-family: "Fredoka", "Trebuchet MS", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button, input { font: inherit; }
+
+/* ===== COCKPIT & 3 TEMA WARNA ===== */
+#cockpit {
+  --bun: #f4a940;
+  --bun-dark: #c9731f;
+  --lettuce: #6cc24a;
+  --patty: #6b3a1e;
+  --cheese: #ffd23f;
+  --mouth: #3a1c12;
+  --line: #3b1f10;
+  --ink: #3b1f10;
+  --hud: #ffd23f;
+  --hud-rgb: 255, 210, 63;
+  --danger: #ff3b30;
+  --lx: 0px;
+  --tx: 0px;
+  --ty: 0px;
+  --scale: 1;
+  position: fixed;
+  right: 34px;
+  bottom: 30px;
+  width: 420px;
+  padding-top: 62px;
+  transform: translate(var(--tx), var(--ty)) scale(var(--scale));
+  transform-origin: right bottom;
+  background: transparent !important;
+  z-index: 9999;
+}
+
+#cockpit.theme-classic { /* Classic Cheese Burger (default di atas) */
+  --bun: #f4a940; --bun-dark: #c9731f; --lettuce: #6cc24a; --patty: #6b3a1e;
+  --cheese: #ffd23f; --mouth: #3a1c12; --line: #3b1f10; --ink: #3b1f10;
+  --hud: #ffd23f; --hud-rgb: 255, 210, 63;
+}
+#cockpit.theme-spicy { /* Spicy Red Patty */
+  --bun: #e5533d; --bun-dark: #a92f22; --lettuce: #8fcf3a; --patty: #4a1712;
+  --cheese: #ff9a2e; --mouth: #2e0f0b; --line: #2a0c08; --ink: #fff0dc;
+  --hud: #ff9a2e; --hud-rgb: 255, 154, 46;
+}
+#cockpit.theme-charcoal { /* Charcoal Black Burger */
+  --bun: #4a4a52; --bun-dark: #2b2b31; --lettuce: #4fae5a; --patty: #16161a;
+  --cheese: #f7d23c; --mouth: #141418; --line: #0b0b0d; --ink: #f5f0e6;
+  --hud: #f7d23c; --hud-rgb: 247, 210, 60;
+}
+
+#cockpit.mode-move { cursor: move; }
+#cockpit.mode-resize { cursor: ns-resize; }
+
+/* ===== MENU SETTING (melayang tepat di atas roti) ===== */
+#settingsMenu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - 40px);
+  padding: 12px;
+  background: rgba(24, 12, 6, 0.95);
+  border: 3px solid var(--hud);
+  border-radius: 18px;
+  box-shadow: 0 0 18px rgba(var(--hud-rgb), 0.45);
+  color: var(--hud);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px) scale(0.96);
+  transition: opacity .25s ease, transform .25s ease;
+  cursor: default;
+  z-index: 10000;
+}
+#settingsMenu.open { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+
+.settings-heading {
+  display: flex; align-items: center; gap: 7px;
+  font: 700 12px "Fredoka", sans-serif; letter-spacing: 1px;
+  padding-bottom: 8px; border-bottom: 1px solid rgba(var(--hud-rgb), .3);
+}
+.settings-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--hud); box-shadow: 0 0 8px var(--hud); }
+.icon-button { margin-left: auto; border: 0; background: transparent; color: var(--hud); cursor: pointer; font-size: 20px; }
+
+.menu-btns { display: flex; gap: 6px; margin-top: 10px; }
+.menu-btns button {
+  flex: 1; padding: 7px 2px; font: 700 11px "Fredoka", sans-serif;
+  color: var(--hud); background: rgba(0, 0, 0, .4);
+  border: 2px solid var(--hud); border-radius: 10px; cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.menu-btns button:hover, .menu-btns button.active { background: var(--hud); color: #2a1408; }
+
+/* ===== MUSIC PLAYER ===== */
+.music-panel { margin-top: 10px; padding: 8px; border: 1px solid rgba(var(--hud-rgb), .3); border-radius: 12px; overflow: hidden; background: #000; }
+.music-now-playing { display: flex; gap: 8px; align-items: center; }
+.music-video-wrap { position: relative; width: 90px; height: 52px; flex: none; border-radius: 8px; overflow: hidden; background: #111; }
+.music-video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+.music-cover { display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.music-cover.show { display: block; }
+.music-placeholder { position: absolute; inset: 0; display: grid; place-items: center; background: #1a1008; color: var(--hud); z-index: 2; }
+.music-placeholder.hide { display: none; }
+.music-placeholder-note { font-size: 22px; }
+.music-track-meta { min-width: 0; flex: 1; }
+#music-track-title { font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#music-track-subtitle { font-size: 10px; color: var(--hud); opacity: .75; margin-top: 2px; }
+
+.music-progress-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 10px; color: #ddd; }
+.music-range { flex: 1; min-width: 0; height: 4px; accent-color: var(--hud); cursor: pointer; }
+
+.music-main-controls { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 8px; }
+.music-control-btn, .music-icon-btn { border: 0; background: transparent; color: var(--hud); font-size: 17px; cursor: pointer; }
+.music-play-btn { width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--hud); color: #2a1408; font-size: 16px; cursor: pointer; }
+
+.music-volume-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.music-small-btn { width: 26px; height: 26px; border: 1px solid var(--hud); border-radius: 8px; background: transparent; color: var(--hud); cursor: pointer; }
+.music-add-row { display: flex; gap: 5px; margin-top: 8px; }
+.music-add-row.hide { display: none !important; }
+.music-add-row input { flex: 1; min-width: 0; padding: 5px 7px; font-size: 10px; color: #fff; background: #1a1008; border: 1px solid rgba(var(--hud-rgb), .4); border-radius: 8px; outline: none; }
+.music-add-primary { background: var(--hud); color: #2a1408; }
+
+.music-tools-row { display: flex; gap: 8px; margin-top: 8px; }
+.music-tool-btn { flex: 1; padding: 4px 0; border: 1px solid rgba(var(--hud-rgb), .4); border-radius: 8px; background: transparent; color: var(--hud); cursor: pointer; }
+.music-tool-btn.active { background: var(--hud); color: #2a1408; }
+
+.music-playlist-head { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px; font-weight: 600; color: #fff; }
+.music-text-btn { border: 0; background: transparent; color: var(--hud); font-size: 16px; cursor: pointer; }
+.music-playlist { max-height: 96px; overflow-y: auto; margin-top: 4px; }
+.music-empty { padding: 8px; font-size: 10px; text-align: center; color: #aaa; }
+.music-track-row { display: flex; align-items: center; gap: 7px; width: 100%; padding: 4px; border: 0; border-radius: 8px; background: transparent; color: #fff; text-align: left; cursor: pointer; }
+.music-track-row:hover, .music-track-row.active { background: rgba(var(--hud-rgb), .2); }
+.music-track-thumb { width: 34px; height: 22px; flex: none; border-radius: 4px; overflow: hidden; background: #222; }
+.music-track-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.music-track-copy { min-width: 0; flex: 1; }
+.music-track-copy strong { display: block; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-track-index { font-size: 9px; opacity: .5; }
+
+#settingsHint { margin-top: 9px; font-size: 11px; font-weight: 500; text-align: center; letter-spacing: .3px; }
+.settings-footer { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(var(--hud-rgb), .25); font-size: 9px; font-weight: 600; opacity: .5; }
+
+/* ===== BODI BURGER ===== */
+.burger {
+  position: relative;
+  width: 100%;
+  filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .18));
+  animation: burgerBoot .7s ease-out both, floatIdle 3.4s ease-in-out .7s infinite;
+}
+
+.toothpick { position: absolute; top: -58px; left: 54%; width: 54px; height: 72px; z-index: 5; transform-origin: 50% 100%; animation: sway 4s ease-in-out infinite; }
+
+/* Dahi: roti atas */
+.bun-top {
+  position: relative;
+  height: 128px;
+  padding: 10px 14px 8px;
+  background: radial-gradient(ellipse at 30% 18%, rgba(255, 255, 255, .35), transparent 55%), linear-gradient(180deg, var(--bun), var(--bun-dark));
+  border: 4px solid var(--line);
+  border-radius: 82px 82px 12px 12px / 70px 70px 12px 12px;
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: 1fr 150px 1fr;
+  align-items: center;
+  column-gap: 4px;
+}
+.seed { position: absolute; width: 11px; height: 6px; border-radius: 50%; background: #fff5d6; border: 1.5px solid var(--line); opacity: .9; }
+
+.forehead-left { display: flex; gap: 4px; justify-content: flex-start; padding-left: 14px; margin-top: 12px; }
+.forehead-right { display: flex; justify-content: flex-end; padding-right: 14px; margin-top: 12px; }
+.hp-badge { padding: 4px 9px; font-size: 13px; font-weight: 700; color: #fff; background: #d6342a; border: 3px solid var(--line); border-radius: 999px; white-space: nowrap; }
+.hp-badge b { font-weight: 700; }
+
+.vehicle-indicator { display: flex; flex-direction: column; align-items: center; width: 30px; opacity: .4; color: var(--ink); transition: opacity .2s, color .2s; }
+.vehicle-indicator svg { width: 22px; height: 22px; }
+.vehicle-indicator small { font-size: 8px; font-weight: 700; }
+.vehicle-indicator.active { opacity: 1; color: #1f8f3a; filter: drop-shadow(0 0 4px rgba(255, 255, 255, .6)); }
+.vehicle-indicator.danger { color: var(--danger); animation: dangerBlink .7s infinite alternate; }
+
+/* Mata zaitun */
+.eyes { width: 150px; height: 62px; overflow: visible; }
+.sclera { fill: #fffdf5; transition: fill .25s; transform-box: fill-box; transform-origin: center; }
+.iris { fill: #7a9a2a; transition: transform .2s; transform-box: fill-box; transform-origin: center; }
+.pupil { fill: #1b1208; }
+.look { transform: translateX(var(--lx)); transition: transform .25s ease; }
+.lid { fill: var(--bun-dark); transform-box: fill-box; transform-origin: 50% 0%; transform: scaleY(0); transition: transform .3s ease; }
+.brow { transform-box: fill-box; transform-origin: center; transition: transform .2s; }
+
+#cockpit.look-left { --lx: -5px; }
+#cockpit.look-right { --lx: 5px; }
+#cockpit.engine-off .lid { transform: scaleY(1); }
+#cockpit.engine-off .look { transform: translateY(4px); }
+#cockpit:not(.engine-off) .eyes { animation: blink 5s infinite; }
+
+#cockpit.redline .sclera { fill: #ff4a3a; }
+#cockpit.redline .iris { fill: #ffb000; }
+#cockpit.redline .brow-l { transform: rotate(18deg) translateY(4px); }
+#cockpit.redline .brow-r { transform: rotate(-18deg) translateY(4px); }
+#cockpit.redline .eyes { filter: drop-shadow(0 0 6px #ff3b30); animation: none; }
+
+#cockpit.overspeed .sclera { transform: scale(1.12); }
+#cockpit.overspeed .iris { transform: scale(.62); }
+#cockpit.overspeed .brow { transform: translateY(-5px); }
+#cockpit.overspeed .eyes { animation: none; }
+
+/* Plester & noda saus */
+.plaster { position: absolute; left: 16px; top: 72px; width: 40px; height: 14px; display: none; transform: rotate(-24deg); }
+.plaster span { position: absolute; inset: 0; background: #f7d9a8; border: 2.5px solid var(--line); border-radius: 4px; }
+.plaster span:last-child { transform: rotate(90deg); }
+.sauce-stain { position: absolute; right: 18px; top: 74px; width: 24px; height: 18px; display: none; background: #d6342a; border: 2.5px solid var(--line); border-radius: 60% 40% 55% 45%; opacity: .9; }
+#cockpit.hurt .plaster, #cockpit.hurt .sauce-stain { display: block; }
+
+/* Keringat dingin */
+.sweat { position: absolute; width: 10px; height: 15px; background: #8fd8ff; border: 2px solid var(--line); border-radius: 50% 50% 50% 50% / 70% 70% 40% 40%; opacity: 0; }
+.sw1 { left: 28%; top: 44px; }
+.sw2 { right: 27%; top: 50px; }
+#cockpit.overspeed .sweat { opacity: 1; animation: sweatDrip .9s ease-in infinite; }
+#cockpit.overspeed .sw2 { animation-delay: .35s; }
+
+.lettuce-strip {
+  height: 18px; margin: -2px 6px 0;
+  background: radial-gradient(circle at 10px -2px, transparent 8px, var(--lettuce) 9px) 0 0 / 20px 100%;
+  background-color: var(--lettuce);
+  border-left: 4px solid var(--line); border-right: 4px solid var(--line);
+  position: relative; z-index: 1;
+}
+
+/* Pipi (selada + patty) & mulut */
+.middle { display: flex; margin-top: -4px; position: relative; }
+.side { position: relative; width: 46px; flex: none; border: 4px solid var(--line); }
+.side-left { background: linear-gradient(90deg, var(--lettuce) 0 45%, var(--patty) 45% 100%); border-radius: 10px 0 0 10px; border-right: 0; }
+.side-right { background: linear-gradient(270deg, var(--lettuce) 0 45%, var(--patty) 45% 100%); border-radius: 0 10px 10px 0; border-left: 0; }
+
+.turn-indicator { position: absolute; top: 6px; width: 28px; height: 28px; color: rgba(255, 255, 255, .25); }
+.side-left .turn-indicator { left: 4px; }
+.side-right .turn-indicator { right: 4px; }
+.turn-indicator svg { width: 100%; height: 100%; }
+.turn-indicator.active { color: #ffb000; filter: drop-shadow(0 0 6px #ffb000); animation: turnBlink .55s steps(1) infinite; }
+
+.mouth {
+  position: relative; flex: 1; height: 168px;
+  background: var(--mouth);
+  border: 4px solid var(--line);
+  border-radius: 16px;
+  box-shadow: inset 0 6px 0 rgba(0, 0, 0, .35);
+  overflow: visible;
+}
+.mouth > * { z-index: 1; }
+
+.teeth { position: absolute; left: 10px; right: 10px; display: flex; justify-content: space-between; z-index: 3; }
+.teeth.top { top: -2px; }
+.teeth.bottom { bottom: -2px; }
+.tooth { width: 24px; height: 17px; background: #fffdf5; border: 2.5px solid var(--line); transition: opacity .3s, transform .4s; position: relative; }
+.teeth.top .tooth { border-radius: 4px 4px 12px 12px; }
+.teeth.bottom .tooth { border-radius: 12px 12px 4px 4px; }
+.tooth.lost { opacity: 0; transform: translateY(14px) rotate(25deg); }
+.teeth.top .tooth.lost { transform: translateY(20px) rotate(-25deg); }
+
+.mouth.sparkle .tooth { animation: sparkle 2.6s ease-in-out infinite; }
+.mouth.sparkle .tooth:nth-child(3n) { animation-delay: .6s; }
+.mouth.sparkle .tooth:nth-child(3n+1) { animation-delay: 1.3s; }
+#cockpit.weak .mouth { animation: mouthTremble .18s linear infinite; }
+
+/* Angka kecepatan luas & kokoh */
+.speed-readout { position: absolute; left: 0; right: 0; top: 26px; text-align: center; z-index: 2; }
+#speedValue {
+  font-size: 78px; font-weight: 700; line-height: .95; letter-spacing: 3px;
+  color: #fff3c9; font-variant-numeric: tabular-nums;
+  text-shadow: 0 4px 0 var(--line), 3px 3px 0 var(--line), -2px 2px 0 var(--line), 0 0 18px rgba(var(--hud-rgb), .35);
+}
+#speedUnit { display: inline-block; margin-top: 2px; padding: 1px 12px; font-size: 14px; font-weight: 700; letter-spacing: 2px; color: var(--ink); background: var(--cheese); border: 2.5px solid var(--line); border-radius: 999px; }
+#cockpit.theme-spicy #speedUnit, #cockpit.theme-charcoal #speedUnit { color: #2a1408; }
+#cockpit.overspeed #speedValue { color: #ff8a80; }
+
+/* Lidah keju meleleh (RPM) */
+.cheese { position: absolute; left: 0; bottom: 0; width: 100%; height: 66px; z-index: 2; border-radius: 0 0 12px 12px; overflow: visible; }
+#cheesePath { fill: var(--cheese); stroke: var(--line); stroke-width: 3; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+#cockpit.redline #cheesePath { fill: #ff7a2e; }
+
+/* Saus tomat menyembur (overspeed) */
+.sauce { position: absolute; width: 13px; height: 17px; background: #d6342a; border: 2.5px solid var(--line); border-radius: 50% 50% 50% 8%; opacity: 0; z-index: 4; }
+.sauce.l1, .sauce.l2 { left: -8px; }
+.sauce.r1, .sauce.r2 { right: -8px; }
+.sauce.l1, .sauce.r1 { top: 62%; }
+.sauce.l2, .sauce.r2 { top: 72%; }
+#cockpit.overspeed .sauce.l1 { animation: sprayL 0.6s ease-out infinite; }
+#cockpit.overspeed .sauce.l2 { animation: sprayL 0.6s ease-out .2s infinite; }
+#cockpit.overspeed .sauce.r1 { animation: sprayR 0.6s ease-out .1s infinite; }
+#cockpit.overspeed .sauce.r2 { animation: sprayR 0.6s ease-out .3s infinite; }
+
+.patty-strip {
+  height: 20px; margin: -4px 0 0; position: relative; z-index: 1;
+  background: linear-gradient(180deg, #8a4b26, var(--patty));
+  border: 4px solid var(--line); border-radius: 6px 6px 12px 12px;
+}
+
+/* Dagu: roti bawah */
+.bun-bottom {
+  display: grid; grid-template-columns: 1fr 58px 84px; align-items: center; gap: 10px;
+  height: 92px; margin-top: -4px; padding: 10px 16px 8px;
+  background: linear-gradient(180deg, var(--bun-dark), var(--bun));
+  border: 4px solid var(--line);
+  border-radius: 10px 10px 56px 56px / 10px 10px 44px 44px;
+  color: var(--ink);
+}
+.fuel-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; letter-spacing: .5px; }
+.meter { height: 14px; margin-top: 4px; background: rgba(0, 0, 0, .45); border: 2.5px solid var(--line); border-radius: 999px; overflow: hidden; }
+#fuelBar { display: block; height: 100%; width: 100%; background: linear-gradient(180deg, #ffe46b, var(--cheese)); border-radius: 999px; transition: width .4s ease; }
+#fuelBar.critical { background: var(--danger); animation: dangerBlink .6s infinite alternate; }
+.odo-line { margin-top: 4px; font-size: 10px; font-weight: 600; opacity: .85; letter-spacing: .5px; }
+
+.gear-badge { width: 54px; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fffdf5; border: 3.5px solid var(--line); border-radius: 18px; color: #3b1f10; line-height: 1; }
+.gear-badge small { font-size: 8px; font-weight: 700; opacity: .6; }
+#gearValue { font-size: 28px; font-weight: 700; }
+
+.plate { padding: 7px 4px; text-align: center; font-size: 13px; font-weight: 700; line-height: 1.05; letter-spacing: 1.5px; color: #d6342a; background: #fffdf5; border: 3.5px solid var(--line); border-radius: 50%; box-shadow: inset 0 0 0 2.5px #fffdf5, inset 0 0 0 4px #d6342a; }
+
+/* ===== PERINGATAN ===== */
+.burger-wrap { position: relative; }
+#cockpit.overspeed .burger-wrap {
+  animation: shake .11s linear infinite, redAlert .45s ease-in-out infinite alternate;
+}
+#cockpit.fuel-critical .fuel-head b { color: var(--danger); animation: dangerBlink .6s infinite alternate; }
+
+/* ===== KEYFRAMES ===== */
+@keyframes burgerBoot { from { opacity: 0; transform: translateY(40px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes floatIdle { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-6px) scale(1.012, .99); } }
+@keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg); } }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+@keyframes shake { 0% { transform: translate(2px, 1px) rotate(.4deg); } 25% { transform: translate(-2px, -1px) rotate(-.4deg); } 50% { transform: translate(-1px, 2px) rotate(.3deg); } 75% { transform: translate(2px, -2px) rotate(-.3deg); } 100% { transform: translate(1px, 1px) rotate(.2deg); } }
+@keyframes redAlert { from { filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .18)) drop-shadow(0 0 0 rgba(255, 0, 0, 0)); } to { filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .18)) drop-shadow(0 0 18px #ff1a1a) saturate(1.3); } }
+@keyframes dangerBlink { from { opacity: 1; } to { opacity: .35; } }
+@keyframes turnBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .25; } }
+@keyframes sparkle { 0%, 80%, 100% { filter: brightness(1); } 88% { filter: brightness(1.25) drop-shadow(0 0 4px #fff); } }
+@keyframes mouthTremble { 0% { transform: translateX(-1.2px); } 50% { transform: translateX(1.2px); } 100% { transform: translateX(-1.2px); } }
+@keyframes sweatDrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+@keyframes sprayL { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(-34px, 30px) rotate(-60deg); } }
+@keyframes sprayR { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(34px, 30px) rotate(60deg); } }

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BURGER MONSTER | Master Chef Delivery HUD</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <main id="cockpit" class="theme-classic engine-off" aria-label="Vehicle HUD">
+
+    <!-- MENU PENGATURAN & MUSIC PLAYER (klik kanan) -->
+    <div id="settingsMenu">
+      <div class="settings-heading">
+        <span class="settings-dot"></span>
+        <span>BURGER CONFIG</span>
+        <button id="closeSettings" class="icon-button" type="button" aria-label="Tutup pengaturan">×</button>
+      </div>
+
+      <div class="menu-btns">
+        <button type="button" data-act="resize">Resize</button>
+        <button type="button" data-act="move">Pindah</button>
+        <button type="button" data-act="reset">Reset</button>
+        <button type="button" data-act="theme">Theme</button>
+      </div>
+
+      <section id="music-panel" class="music-panel no-drag" aria-label="Online Music Player">
+        <div class="music-now-playing">
+          <div class="music-video-wrap">
+            <div id="youtube-player"></div>
+            <img id="music-cover" class="music-cover" alt="" aria-hidden="true">
+            <div id="music-player-placeholder" class="music-placeholder">
+              <span class="music-placeholder-note" aria-label="Music">♪</span>
+            </div>
+          </div>
+          <div class="music-track-meta">
+            <div id="music-track-title">Belum ada lagu</div>
+            <div id="music-track-subtitle">Online playback</div>
+          </div>
+        </div>
+
+        <div class="music-progress-row">
+          <span id="music-current-time">0:00</span>
+          <input id="music-progress" class="music-range" type="range" min="0" max="1000" value="0" step="1" aria-label="Song progress">
+          <span id="music-duration">0:00</span>
+        </div>
+
+        <div class="music-main-controls">
+          <button id="btn-music-prev" class="music-control-btn" type="button" title="Previous">⏮</button>
+          <button id="btn-music-play" class="music-play-btn" type="button" title="Play / Pause">▶</button>
+          <button id="btn-music-next" class="music-control-btn" type="button" title="Next">⏭</button>
+        </div>
+
+        <div class="music-volume-row">
+          <button id="btn-music-mute" class="music-icon-btn" type="button" title="Mute">🔊</button>
+          <input id="music-volume" class="music-range" type="range" min="0" max="100" value="80" step="1" aria-label="Volume">
+          <button id="btn-music-add-toggle" class="music-small-btn music-add-toggle" type="button" title="Tambah lagu">＋</button>
+        </div>
+
+        <div id="music-add-row" class="music-add-row hide">
+          <input id="music-url-input" type="text" placeholder="Link YouTube / ID Video" autocomplete="off">
+          <input id="music-title-input" type="text" placeholder="Nama lagu (opsional)" autocomplete="off">
+          <button id="btn-music-add" class="music-small-btn music-add-primary" type="button">▶</button>
+        </div>
+
+        <div class="music-tools-row">
+          <button id="btn-music-repeat" class="music-tool-btn" type="button" title="Ulangi lagu">↻</button>
+          <button id="btn-music-shuffle" class="music-tool-btn" type="button" title="Putar acak">⤨</button>
+        </div>
+
+        <div class="music-playlist-head">
+          <span>Playlist</span>
+          <button id="btn-music-clear" class="music-text-btn" type="button" title="Kosongkan playlist">×</button>
+        </div>
+        <div id="music-playlist" class="music-playlist" role="list">
+          <div class="music-empty">Playlist kosong. Tekan + untuk menambah lagu.</div>
+        </div>
+      </section>
+
+      <div id="settingsHint">Klik kanan untuk menutup menu</div>
+      <div class="settings-footer">
+        <span>MASTER CHEF OS</span>
+        <span>BUILD 10.26</span>
+      </div>
+    </div>
+
+    <!-- ===== BODI BURGER MONSTER ===== -->
+    <div id="burgerWrap" class="burger-wrap">
+    <div id="burger" class="burger">
+
+      <!-- Tusuk gigi + zaitun mini -->
+      <svg class="toothpick" viewBox="0 0 60 80" aria-hidden="true">
+        <line x1="22" y1="78" x2="40" y2="10" stroke="#e6c27a" stroke-width="4" stroke-linecap="round"/>
+        <line x1="22" y1="78" x2="40" y2="10" stroke="#3b1f10" stroke-width="1" opacity=".35"/>
+        <ellipse cx="43" cy="14" rx="11" ry="13" fill="#7a9a2a" stroke="#3b1f10" stroke-width="3"/>
+        <circle cx="43" cy="14" r="4.5" fill="#e23b2e" stroke="#3b1f10" stroke-width="1.5"/>
+        <ellipse cx="38" cy="9" rx="3" ry="2" fill="#fff" opacity=".6"/>
+      </svg>
+
+      <!-- DAHI: ROTI ATAS -->
+      <section class="bun-top">
+        <i class="seed" style="left:14%;top:12%;transform:rotate(-20deg)"></i>
+        <i class="seed" style="left:30%;top:6%;transform:rotate(15deg)"></i>
+        <i class="seed" style="left:52%;top:5%;transform:rotate(-8deg)"></i>
+        <i class="seed" style="left:70%;top:9%;transform:rotate(25deg)"></i>
+        <i class="seed" style="left:84%;top:18%;transform:rotate(-15deg)"></i>
+
+        <div class="forehead-left">
+          <div id="engineCheck" class="vehicle-indicator" title="Engine Check">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h3l2-3h6l2 3h3v9h-3l-2 2H8l-2-2H4zM9 6V3h5v3M8 12h3m2 0h3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/></svg>
+            <small>ENG</small>
+          </div>
+          <div id="headlightIndicator" class="vehicle-indicator" title="Headlights">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h5a5 5 0 0 1 0 10H4zM13 8h7M13 12h8M13 16h7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <small id="headlightLabel">LIGHT</small>
+          </div>
+          <div id="seatbeltIndicator" class="vehicle-indicator" title="Seatbelt">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3l4 3-2 4 6 7 3-2 2 3-4 3-9-10 1-4-3-2z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+            <small>BELT</small>
+          </div>
+        </div>
+
+        <!-- Mata zaitun & alis -->
+        <svg id="eyes" class="eyes" viewBox="0 0 160 66" aria-label="Mata zaitun">
+          <defs><clipPath id="eyeClip"><circle cx="0" cy="0" r="18"/></clipPath></defs>
+          <g class="brow brow-l"><path d="M24 14 Q42 6 62 12" fill="none" stroke="var(--line)" stroke-width="5" stroke-linecap="round"/></g>
+          <g class="brow brow-r"><path d="M98 12 Q118 6 136 14" fill="none" stroke="var(--line)" stroke-width="5" stroke-linecap="round"/></g>
+          <g transform="translate(43 40)">
+            <g clip-path="url(#eyeClip)">
+              <circle class="sclera" r="18"/>
+              <g class="look">
+                <circle class="iris" r="11"/>
+                <circle class="pupil" r="5.2"/>
+                <circle cx="-3" cy="-4" r="2.4" fill="#fff"/>
+              </g>
+              <rect class="lid" x="-19" y="-19" width="38" height="38"/>
+            </g>
+            <circle r="18" fill="none" stroke="var(--line)" stroke-width="3.5"/>
+          </g>
+          <g transform="translate(117 40)">
+            <g clip-path="url(#eyeClip)">
+              <circle class="sclera" r="18"/>
+              <g class="look">
+                <circle class="iris" r="11"/>
+                <circle class="pupil" r="5.2"/>
+                <circle cx="-3" cy="-4" r="2.4" fill="#fff"/>
+              </g>
+              <rect class="lid" x="-19" y="-19" width="38" height="38"/>
+            </g>
+            <circle r="18" fill="none" stroke="var(--line)" stroke-width="3.5"/>
+          </g>
+        </svg>
+
+        <div class="forehead-right">
+          <div class="hp-badge">❤ HP <b id="healthValue">100%</b></div>
+        </div>
+
+        <!-- Kerusakan: plester silang & noda saus -->
+        <div id="plaster" class="plaster" aria-hidden="true"><span></span><span></span></div>
+        <div id="sauceStain" class="sauce-stain" aria-hidden="true"></div>
+
+        <!-- Keringat dingin -->
+        <i class="sweat sw1"></i><i class="sweat sw2"></i>
+      </section>
+
+      <div class="lettuce-strip"></div>
+
+      <!-- PIPI & MULUT -->
+      <div class="middle">
+        <div class="side side-left">
+          <div id="leftIndicator" class="turn-indicator" title="Sein kiri">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4L3 12l10 8v-4.5h8v-7h-8z" fill="currentColor" stroke="var(--line)" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+
+        <div id="mouth" class="mouth sparkle">
+          <div id="teethTop" class="teeth top"></div>
+
+          <div class="speed-readout">
+            <div id="speedValue">000</div>
+            <span id="speedUnit">KM/H</span>
+          </div>
+
+          <!-- Lidah keju meleleh = RPM -->
+          <svg class="cheese" viewBox="0 0 300 70" preserveAspectRatio="none" aria-label="Tachometer keju">
+            <path id="cheesePath" d="M0 70 L0 66 L300 66 L300 70 Z"/>
+            <ellipse cx="60" cy="0" rx="0" ry="0"/>
+          </svg>
+
+          <div id="teethBottom" class="teeth bottom"></div>
+
+          <i class="sauce l1"></i><i class="sauce l2"></i>
+          <i class="sauce r1"></i><i class="sauce r2"></i>
+        </div>
+
+        <div class="side side-right">
+          <div id="rightIndicator" class="turn-indicator" title="Sein kanan">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4l10 8-10 8v-4.5H3v-7h8z" fill="currentColor" stroke="var(--line)" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="patty-strip"></div>
+
+      <!-- DAGU: ROTI BAWAH -->
+      <section class="bun-bottom">
+        <div class="fuel-block">
+          <div class="fuel-head"><span>⛽ KITCHEN FUEL</span><b id="fuelValue">100%</b></div>
+          <div class="meter"><span id="fuelBar"></span></div>
+          <div class="odo-line">ODO <span id="odometerValue">000000.0</span> KM</div>
+        </div>
+        <div class="gear-badge">
+          <small>GEAR</small>
+          <div id="gearValue">N</div>
+        </div>
+        <div class="plate">MASTER<br>CHEF</div>
+      </section>
+    </div>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
