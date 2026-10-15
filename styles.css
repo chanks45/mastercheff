@@ -397,3 +397,17 @@ button, input { font: inherit; }
 .mini-pill-controls { display: flex; gap: 2px; }
 .mini-ctrl-btn { width: 24px; height: 24px; border: 0; background: transparent; color: var(--hud); font-size: 13px; cursor: pointer; }
 .mini-ctrl-btn:hover { color: #fff; }
+
+/* Notifikasi di dalam speedometer (link radio/YouTube tidak valid) */
+.hud-notice {
+  position: absolute; left: 50%; top: 6px; z-index: 5;
+  max-width: calc(100% - 16px); padding: 3px 12px;
+  background: var(--cheese); color: var(--ink);
+  border: 2.5px solid var(--line); border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: .5px; line-height: 1.2;
+  white-space: nowrap; text-align: center; pointer-events: none;
+  opacity: 0; transform: translateX(-50%) scale(.92);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.hud-notice.show { opacity: 1; transform: translateX(-50%) scale(1); }
+#cockpit.theme-spicy .hud-notice, #cockpit.theme-charcoal .hud-notice { color: #2a1408; }
