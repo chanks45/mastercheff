@@ -341,3 +341,59 @@ button, input { font: inherit; }
 @keyframes sweatDrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
 @keyframes sprayL { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(-34px, 30px) rotate(-60deg); } }
 @keyframes sprayR { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(34px, 30px) rotate(60deg); } }
+
+/* ===== FITUR TAMBAHAN: DOOR LOCK, LAMPU, ENGINE, IMPACT, NIGHT ===== */
+.door-lock { position: absolute; left: 50%; bottom: 10px; width: 26px; height: 26px; margin-left: -13px; color: rgba(255, 255, 255, .4); transition: color .2s; }
+.door-lock svg { width: 100%; height: 100%; overflow: visible; }
+.door-lock.locked { color: #35f277; filter: drop-shadow(0 0 5px #35f277); }
+.door-lock.lock-snap { animation: lockSnap .36s ease; }
+.vehicle-indicator.warn { opacity: 1; color: #e08a00; }
+.vehicle-indicator.high-beam { color: #1478c8; }
+#cockpit.night-mode #speedValue { text-shadow: 0 4px 0 var(--line), 3px 3px 0 var(--line), -2px 2px 0 var(--line), 0 0 26px rgba(var(--hud-rgb), .85); }
+#cockpit.night-mode #gearValue { text-shadow: 0 0 10px rgba(var(--hud-rgb), .8); }
+#cockpit.night-mode .vehicle-indicator.active { filter: drop-shadow(0 0 6px rgba(var(--hud-rgb), .9)); }
+#cockpit.health-low .hp-badge { animation: dangerBlink .6s infinite alternate; }
+#cockpit.music-playing:not(.overspeed):not(.impact-flash) .burger-wrap { animation: musicGlow 1.6s ease-in-out infinite alternate; }
+#cockpit.impact-flash .burger-wrap { animation: impactHit .45s cubic-bezier(.36, .07, .19, .97); }
+@keyframes lockSnap { 0% { transform: scale(.8); } 55% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@keyframes musicGlow { from { filter: drop-shadow(0 0 0 rgba(var(--hud-rgb), 0)); } to { filter: drop-shadow(0 0 14px rgba(var(--hud-rgb), .6)); } }
+@keyframes impactHit {
+  0%, 100% { transform: translate(0, 0); filter: drop-shadow(0 0 22px #ff2e2e); }
+  20% { transform: translate(-5px, 2px); } 40% { transform: translate(5px, -2px); }
+  60% { transform: translate(-3px, -1px); } 80% { transform: translate(3px, 1px); }
+}
+
+/* ===== TAB AUDIO & RADIO FM ===== */
+.audio-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.audio-tab { flex: 1; padding: 5px 0; font-size: 11px; font-weight: 700; color: var(--hud); background: transparent; border: 2px solid rgba(var(--hud-rgb), .5); border-radius: 10px; cursor: pointer; }
+.audio-tab.active { background: var(--hud); color: #2a1408; border-color: var(--hud); }
+.audio-tab-pane { display: none; }
+.audio-tab-pane.active { display: block; }
+.radio-display { display: flex; align-items: center; gap: 8px; }
+.radio-badge { padding: 2px 7px; font-size: 9px; font-weight: 700; color: #fff; background: #d6342a; border-radius: 999px; }
+.radio-meta { flex: 1; min-width: 0; }
+.radio-station-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.radio-status-text { font-size: 10px; color: var(--hud); opacity: .8; }
+.radio-eq, .mini-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+.radio-eq span, .mini-eq span { width: 3px; height: 3px; background: var(--hud); border-radius: 2px; }
+#cockpit.radio-active .radio-eq span, .mini-music-pill.playing .mini-eq span { animation: eqBounce .6s ease-in-out infinite alternate; }
+.radio-eq span:nth-child(2), .mini-eq span:nth-child(2) { animation-delay: .15s !important; }
+.radio-eq span:nth-child(3), .mini-eq span:nth-child(3) { animation-delay: .3s !important; }
+.radio-eq span:nth-child(4) { animation-delay: .45s !important; }
+@keyframes eqBounce { from { height: 3px; } to { height: 13px; } }
+.radio-select { width: 100%; margin-top: 8px; padding: 5px 7px; font-size: 11px; color: #fff; background: #1a1008; border: 1px solid rgba(var(--hud-rgb), .4); border-radius: 8px; outline: none; }
+.volume-pct { min-width: 30px; font-size: 10px; text-align: right; color: #ddd; }
+.radio-track-badge { padding: 1px 5px; font-size: 8px; font-weight: 700; color: #2a1408; background: var(--hud); border-radius: 6px; }
+.radio-track-badge.custom { background: #6cc24a; }
+.track-del-btn { padding: 0 5px; font-size: 14px; color: #ff6b5e; }
+
+/* ===== MINI AUDIO PILL ===== */
+.mini-music-pill { position: absolute; left: 8px; right: 8px; bottom: calc(100% + 8px); height: 38px; padding: 0 10px; display: none; align-items: center; gap: 8px; color: var(--hud); background: rgba(24, 12, 6, .95); border: 3px solid var(--hud); border-radius: 999px; box-shadow: 0 0 14px rgba(var(--hud-rgb), .4); z-index: 9990; }
+.mini-music-pill.show { display: flex; }
+#settingsMenu.open ~ .mini-music-pill { visibility: hidden; }
+.mini-source-badge { padding: 2px 7px; font-size: 9px; font-weight: 700; color: #2a1408; background: var(--hud); border-radius: 999px; white-space: nowrap; }
+.mini-source-badge.yt-mode { background: #ff4a3a; color: #fff; }
+.mini-track-title { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-pill-controls { display: flex; gap: 2px; }
+.mini-ctrl-btn { width: 24px; height: 24px; border: 0; background: transparent; color: var(--hud); font-size: 13px; cursor: pointer; }
+.mini-ctrl-btn:hover { color: #fff; }

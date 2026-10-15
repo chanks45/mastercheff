@@ -27,7 +27,46 @@
         <button type="button" data-act="theme">Theme</button>
       </div>
 
-      <section id="music-panel" class="music-panel no-drag" aria-label="Online Music Player">
+      <section id="music-panel" class="music-panel no-drag" aria-label="Dual Mode Audio Player">
+        <div class="audio-tabs" role="tablist">
+          <button id="tabBtnRadio" class="audio-tab active" type="button">📻 Radio FM</button>
+          <button id="tabBtnYoutube" class="audio-tab" type="button">▶ YouTube</button>
+        </div>
+
+        <div id="tabContentRadio" class="audio-tab-pane active">
+          <div class="radio-display">
+            <div class="radio-badge">LIVE FM</div>
+            <div class="radio-meta">
+              <div id="stationName" class="radio-station-name">Delta FM</div>
+              <div id="radioStatus" class="radio-status-text">Stopped</div>
+            </div>
+            <div class="radio-eq" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          </div>
+          <select id="stationSelect" class="radio-select" aria-label="Pilih Stasiun Radio"></select>
+          <div class="music-main-controls">
+            <button id="btn-radio-prev" class="music-control-btn" type="button" title="Stasiun Sebelumnya">⏮</button>
+            <button id="btn-radio-play" class="music-play-btn" type="button" title="Play / Pause Radio">▶</button>
+            <button id="btn-radio-next" class="music-control-btn" type="button" title="Stasiun Berikutnya">⏭</button>
+          </div>
+          <div class="music-volume-row">
+            <button id="btn-radio-mute" class="music-icon-btn" type="button" title="Mute Radio">🔊</button>
+            <input id="radio-volume" class="music-range" type="range" min="0" max="100" value="80" step="1" aria-label="Radio Volume">
+            <span id="radio-volume-label" class="volume-pct">80%</span>
+            <button id="btn-radio-add-toggle" class="music-small-btn music-add-toggle" type="button" title="Tambah saluran radio via link">＋</button>
+          </div>
+          <div id="radio-add-row" class="music-add-row hide">
+            <input id="radio-url-input" type="text" placeholder="Link Stream Radio (http/https)" autocomplete="off">
+            <input id="radio-title-input" type="text" placeholder="Nama Radio (opsional)" autocomplete="off">
+            <button id="btn-radio-add" class="music-small-btn music-add-primary" type="button" title="Simpan & Putar">▶</button>
+          </div>
+          <div class="music-playlist-head">
+            <span>Saluran Radio</span>
+            <button id="btn-radio-clear" class="music-text-btn" type="button" title="Hapus semua radio tambahan">↺</button>
+          </div>
+          <div id="radio-playlist" class="music-playlist" role="list"></div>
+        </div>
+
+        <div id="tabContentYoutube" class="audio-tab-pane">
         <div class="music-now-playing">
           <div class="music-video-wrap">
             <div id="youtube-player"></div>
@@ -78,12 +117,27 @@
         <div id="music-playlist" class="music-playlist" role="list">
           <div class="music-empty">Playlist kosong. Tekan + untuk menambah lagu.</div>
         </div>
+        </div>
       </section>
 
       <div id="settingsHint">Klik kanan untuk menutup menu</div>
       <div class="settings-footer">
         <span>MASTER CHEF OS</span>
         <span>BUILD 10.26</span>
+      </div>
+    </div>
+
+    <!-- MINI AUDIO CONTROLLER (di atas burger) -->
+    <div id="mini-music-pill" class="mini-music-pill" aria-label="Mini Audio Controller">
+      <span id="miniSourceBadge" class="mini-source-badge">📻 RADIO</span>
+      <div id="miniEq" class="mini-eq" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div id="miniTrackTitle" class="mini-track-title">Delta FM</div>
+      <div class="mini-pill-controls">
+        <button id="btn-mini-prev" class="mini-ctrl-btn" type="button" title="Sebelumnya">⏮</button>
+        <button id="btn-mini-play" class="mini-ctrl-btn" type="button" title="Play / Pause">▶</button>
+        <button id="btn-mini-next" class="mini-ctrl-btn" type="button" title="Berikutnya">⏭</button>
+        <button id="btn-mini-open" class="mini-ctrl-btn" type="button" title="Buka Panel Musik">🎵</button>
+        <button id="btn-mini-close" class="mini-ctrl-btn" type="button" title="Sembunyikan Mini Player">×</button>
       </div>
     </div>
 
@@ -200,6 +254,9 @@
           <div id="rightIndicator" class="turn-indicator" title="Sein kanan">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4l10 8-10 8v-4.5H3v-7h8z" fill="currentColor" stroke="var(--line)" stroke-width="1.6" stroke-linejoin="round"/></svg>
           </div>
+          <div id="doorLockIcon" class="door-lock unlocked" title="Doors: Unlocked">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path id="lockShackle" d="M7 11V7a5 5 0 0 1 9.9-1" fill="none" stroke="var(--line)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="5" y="11" width="14" height="10" rx="2.4" fill="currentColor" stroke="var(--line)" stroke-width="1.8"/><circle cx="12" cy="16" r="1.5" fill="var(--line)"/></svg>
+          </div>
         </div>
       </div>
 
@@ -210,7 +267,7 @@
         <div class="fuel-block">
           <div class="fuel-head"><span>⛽ KITCHEN FUEL</span><b id="fuelValue">100%</b></div>
           <div class="meter"><span id="fuelBar"></span></div>
-          <div class="odo-line">ODO <span id="odometerValue">000000.0</span> KM</div>
+          <div class="odo-line">ODO <span id="odometerValue">000000.0</span> <span id="odoUnit">KM</span></div>
         </div>
         <div class="gear-badge">
           <small>GEAR</small>

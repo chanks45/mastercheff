@@ -12,6 +12,7 @@
   var REDLINE = 0.85;        // 85% RPM
   var MAX_RPM = 8000;
   var THEMES = ['theme-classic', 'theme-spicy', 'theme-charcoal'];
+  var THEME_NAMES = ['Classic Cheese Burger', 'Spicy Red Patty', 'Charcoal Black Burger'];
 
   /* ================= STATE ================= */
   var S = {
@@ -28,6 +29,7 @@
     left: false,
     right: false,
     belt: false,
+    locked: false,
     odo: 0
   };
 
@@ -170,6 +172,7 @@
     }
     if (placeholder) placeholder.classList.toggle('hide', !!track);
     renderMusicPlaylist();
+    updateMiniPill();
   }
 
   function updateMusicPlayButton() {
@@ -177,6 +180,7 @@
     if (!btn) return;
     var state = musicPlayer && typeof musicPlayer.getPlayerState === 'function' ? musicPlayer.getPlayerState() : -1;
     btn.textContent = state === 1 ? '❚❚' : '▶';
+    syncAudioVisualPulse();
   }
 
   function startMusicProgressLoop() {
@@ -248,6 +252,10 @@
           }
         },
         onStateChange: function (event) {
+          if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.BUFFERING) {
+            activeAudioSource = 'youtube'; hasAudioActivated = true; miniPillDismissed = false;
+            pauseRadioIfNeeded();
+          }
           updateMusicPlayButton();
           if (event.data === YT.PlayerState.ENDED) {
             playNextMusic(true);
@@ -287,6 +295,8 @@
   function playMusicIndex(index) {
     index = Number(index);
     if (!Number.isInteger(index) || index < 0 || index >= musicPlaylist.length) return;
+    activeAudioSource = 'youtube'; hasAudioActivated = true; miniPillDismissed = false;
+    pauseRadioIfNeeded();
     musicIndex = index;
     updateMusicMeta();
 
@@ -305,21 +315,26 @@
   }
 
   function toggleMusicPlayback() {
+    activeAudioSource = 'youtube'; hasAudioActivated = true; miniPillDismissed = false;
     if (!musicReady) {
       if (!musicPlaylist.length) {
+        menu.classList.add('open');
+        $('tabBtnYoutube')?.click();
         $('music-add-row')?.classList.remove('hide');
         $('music-url-input')?.focus();
         return;
       }
+      pauseRadioIfNeeded();
       ensureYouTubeAPI();
       if (musicIndex < 0) musicIndex = 0;
       musicPendingLoad = musicIndex;
+      updateMiniPill();
       return;
     }
-    var state = musicPlayer.getPlayerState();
-    if (state === YT.PlayerState.PLAYING) {
+    if (musicPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
       musicPlayer.pauseVideo();
     } else {
+      pauseRadioIfNeeded();
       musicPlayer.playVideo();
     }
   }
@@ -336,8 +351,7 @@
     } else {
       next = musicIndex + 1;
       if (next >= musicPlaylist.length) {
-        if (auto) next = 0;
-        else return;
+        next = 0;
       }
     }
     playMusicIndex(next);
@@ -424,6 +438,7 @@
       renderMusicPlaylist();
       updateMusicMeta();
       if (musicPlayer && musicReady) musicPlayer.stopVideo();
+      syncAudioVisualPulse();
     });
 
     if (repeat) repeat.addEventListener('click', function () {
@@ -437,6 +452,297 @@
     });
 
     if (musicPlaylist.length) ensureYouTubeAPI();
+  }
+
+/* ================= RADIO FM, MINI PILL, CHIME SEATBELT, SINKRONISASI AUDIO ================= */
+  var RADIO_STORAGE_KEY = 'samc_radio_custom_stations_v1';
+  var defaultStations = [
+    { name: 'Delta FM', url: 'https://s1.cloudmu.id/listen/delta_fm/radio.mp3' },
+    { name: 'Prambors FM', url: 'https://s2.cloudmu.id/listen/prambors/radio.aac' },
+    { name: 'I Radio', url: 'https://stream.radiojar.com/4ywdgup3bnzuv' },
+    { name: 'Female Radio', url: 'https://s1.cloudmu.id/listen/female_radio/radio.mp3' },
+    { name: 'KPOP Radio', url: 'https://stream9.mexiserver.com:7122/stream' },
+    { name: 'Kiss FM', url: 'https://live.kissfmmedan.com/kissfm.mp3' },
+    { name: 'JGRP Radio', url: 'https://s7.alhastream.com/radio/8350/live' },
+    { name: 'Hits Radio', url: 'https://playerservices.streamtheworld.com/api/livestream-redirect/977_HITS_SC' },
+    { name: 'Hits Love', url: 'https://radio2.vip-radios.fm:18012/stream-128kmp3-HitsLove' }
+  ];
+  var customStations = [];
+  var stations = defaultStations.slice();
+  var radioAudio = new Audio();
+  radioAudio.preload = 'none';
+  radioAudio.volume = 0.8;
+  var currentStationIndex = 0;
+  var isRadioPlaying = false;
+  var activeAudioSource = 'radio';
+  var hasAudioActivated = false;
+  var miniPillDismissed = false;
+
+  var prevEngine = false, prevHealth = 100, prevLocked = null;
+  var bootUntil = 0, impactTimer = null, lockSnapTimer = null;
+
+  /* Chime seatbelt lembut (587Hz & 880Hz) */
+  var audioCtx = null, beltTimer = null;
+  function playBeltChime() {
+    if (S.belt || !S.engine) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      var now = audioCtx.currentTime;
+      [{ f: 587, d: 0, t: 0.22 }, { f: 880, d: 0.18, t: 0.32 }].forEach(function (n) {
+        var osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.f, now + n.d);
+        g.gain.setValueAtTime(0.0001, now + n.d);
+        g.gain.linearRampToValueAtTime(0.045, now + n.d + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + n.d + n.t);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(now + n.d); osc.stop(now + n.d + n.t + 0.02);
+      });
+    } catch (e) {}
+  }
+  function updateBeltBeep() {
+    if (!S.belt && S.engine) {
+      if (!beltTimer) { playBeltChime(); beltTimer = setInterval(playBeltChime, 2600); }
+    } else if (beltTimer) { clearInterval(beltTimer); beltTimer = null; }
+  }
+
+  /* Mini pill & anti-bentrok */
+  function isYouTubePlaying() {
+    return !!(musicPlayer && musicReady && typeof musicPlayer.getPlayerState === 'function' && musicPlayer.getPlayerState() === 1);
+  }
+  function updateMiniPill() {
+    var pill = $('mini-music-pill');
+    if (!pill) return;
+    var yt = isYouTubePlaying(), any = isRadioPlaying || yt;
+    if (isRadioPlaying) { activeAudioSource = 'radio'; hasAudioActivated = true; miniPillDismissed = false; }
+    else if (yt) { activeAudioSource = 'youtube'; hasAudioActivated = true; miniPillDismissed = false; }
+    pill.classList.toggle('show', hasAudioActivated && !miniPillDismissed);
+    pill.classList.toggle('playing', any);
+    var badge = $('miniSourceBadge');
+    if (badge) {
+      badge.textContent = activeAudioSource === 'youtube' ? '▶ YT' : '📻 RADIO';
+      badge.className = 'mini-source-badge ' + (activeAudioSource === 'youtube' ? 'yt-mode' : 'radio-mode');
+    }
+    var title = activeAudioSource === 'youtube'
+      ? (musicPlaylist[musicIndex] ? musicPlaylist[musicIndex].title : 'YouTube Track')
+      : (stations[currentStationIndex] ? stations[currentStationIndex].name : 'Radio FM');
+    setText('miniTrackTitle', title);
+    setText('btn-mini-play', any ? '❚❚' : '▶');
+  }
+  function syncAudioVisualPulse() {
+    cockpit.classList.toggle('music-playing', isRadioPlaying || isYouTubePlaying());
+    cockpit.classList.toggle('radio-active', isRadioPlaying);
+    updateMiniPill();
+  }
+  function pauseYouTubeIfNeeded() {
+    if (musicPlayer && musicReady && typeof musicPlayer.pauseVideo === 'function') {
+      try { var st = musicPlayer.getPlayerState(); if (st === 1 || st === 3) musicPlayer.pauseVideo(); } catch (_) {}
+    }
+    updateMusicPlayButton();
+  }
+  function pauseRadioIfNeeded() {
+    if (!radioAudio.paused || isRadioPlaying) {
+      radioAudio.pause();
+      isRadioPlaying = false;
+      updateRadioUI('Paused');
+    }
+  }
+
+  /* Radio FM */
+  function rebuildStations() {
+    stations = defaultStations.concat(customStations);
+    if (currentStationIndex >= stations.length) currentStationIndex = Math.max(0, stations.length - 1);
+  }
+  function loadCustomStations() {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(RADIO_STORAGE_KEY) || '[]');
+      customStations = Array.isArray(parsed)
+        ? parsed.filter(function (i) { return i && i.url; }).map(function (i) { return { name: String(i.name || 'Custom Radio'), url: String(i.url).trim(), isCustom: true }; })
+        : [];
+    } catch (_) { customStations = []; }
+    rebuildStations();
+  }
+  function saveCustomStations() {
+    try { localStorage.setItem(RADIO_STORAGE_KEY, JSON.stringify(customStations)); } catch (_) {}
+  }
+  function validStreamUrl(v) {
+    try { var u = new URL(String(v || '').trim()); return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null; } catch (_) { return null; }
+  }
+  function renderRadioList() {
+    var sel = $('stationSelect');
+    if (sel) {
+      sel.innerHTML = '';
+      stations.forEach(function (st, i) {
+        var o = document.createElement('option');
+        o.value = String(i);
+        o.textContent = (i + 1) + '. ' + st.name + (st.isCustom ? ' ★' : '');
+        sel.appendChild(o);
+      });
+      sel.value = String(currentStationIndex);
+    }
+    var list = $('radio-playlist');
+    if (!list) return;
+    list.innerHTML = '';
+    stations.forEach(function (st, i) {
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'music-track-row' + (i === currentStationIndex ? ' active' : '');
+      row.innerHTML =
+        '<span class="radio-track-badge' + (st.isCustom ? ' custom' : '') + '">' + (st.isCustom ? 'CUSTOM' : 'FM') + '</span>' +
+        '<span class="music-track-copy"><strong>' + escapeHtml(st.name) + '</strong></span>' +
+        '<span class="music-track-index">' + String(i + 1).padStart(2, '0') + '</span>' +
+        (st.isCustom ? '<span class="track-del-btn" data-del-radio="' + (i - defaultStations.length) + '" title="Hapus saluran ini">×</span>' : '');
+      row.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var del = e.target.closest('[data-del-radio]');
+        if (del) removeCustomStation(Number(del.getAttribute('data-del-radio')));
+        else loadAndPlayRadio(i);
+      });
+      list.appendChild(row);
+    });
+  }
+  function updateRadioUI(status) {
+    var st = stations[currentStationIndex] || stations[0];
+    if (st) setText('stationName', st.name);
+    if (status) setText('radioStatus', status);
+    setText('btn-radio-play', isRadioPlaying ? '❚❚' : '▶');
+    renderRadioList();
+    syncAudioVisualPulse();
+  }
+  function addCustomStation(urlInput, nameInput) {
+    var url = validStreamUrl(urlInput);
+    if (!url) { alert('Masukkan link streaming radio (http:// atau https://) yang valid.'); return false; }
+    var ex = stations.findIndex(function (i) { return i.url.toLowerCase() === url.toLowerCase(); });
+    if (ex !== -1) { loadAndPlayRadio(ex); return true; }
+    var title = String(nameInput || '').trim();
+    if (!title) { try { title = 'Radio • ' + new URL(url).hostname.replace(/^www\./i, ''); } catch (_) { title = 'Radio • ' + (customStations.length + 1); } }
+    customStations.push({ name: title, url: url, isCustom: true });
+    saveCustomStations();
+    rebuildStations();
+    loadAndPlayRadio(stations.length - 1);
+    return true;
+  }
+  function removeCustomStation(ci) {
+    if (ci < 0 || ci >= customStations.length) return;
+    var gi = defaultStations.length + ci, wasCurrent = currentStationIndex === gi;
+    customStations.splice(ci, 1);
+    saveCustomStations();
+    rebuildStations();
+    if (wasCurrent) {
+      currentStationIndex = 0;
+      if (isRadioPlaying) { loadAndPlayRadio(0); return; }
+      radioAudio.pause(); radioAudio.removeAttribute('src');
+      updateRadioUI('Stopped');
+    } else if (currentStationIndex > gi) {
+      currentStationIndex--;
+    }
+    updateRadioUI();
+  }
+  function loadAndPlayRadio(index) {
+    if (!stations.length) return;
+    if (index < 0) index = stations.length - 1;
+    if (index >= stations.length) index = 0;
+    currentStationIndex = index;
+    activeAudioSource = 'radio'; hasAudioActivated = true; miniPillDismissed = false;
+    pauseYouTubeIfNeeded();
+    try {
+      radioAudio.pause();
+      radioAudio.src = stations[index].url;
+      radioAudio.load();
+      isRadioPlaying = false;
+      updateRadioUI('Loading...');
+      var p = radioAudio.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function () { isRadioPlaying = true; updateRadioUI('Now Playing'); })
+         .catch(function () { isRadioPlaying = false; updateRadioUI('Stream Error / Offline'); });
+      }
+    } catch (e) { isRadioPlaying = false; updateRadioUI('Stopped'); }
+  }
+  function toggleRadioPlayback() {
+    activeAudioSource = 'radio'; hasAudioActivated = true; miniPillDismissed = false;
+    if (isRadioPlaying && !radioAudio.paused) {
+      radioAudio.pause(); isRadioPlaying = false; updateRadioUI('Paused');
+    } else if (!radioAudio.src) {
+      loadAndPlayRadio(currentStationIndex);
+    } else {
+      pauseYouTubeIfNeeded();
+      updateRadioUI('Loading...');
+      radioAudio.play().then(function () { isRadioPlaying = true; updateRadioUI('Now Playing'); })
+        .catch(function () { loadAndPlayRadio(currentStationIndex); });
+    }
+  }
+  function on(id, ev, fn) { var el = $(id); if (el) el.addEventListener(ev, fn); }
+  function setupRadioPlayer() {
+    var addRow = $('radio-add-row'), urlIn = $('radio-url-input'), titleIn = $('radio-title-input');
+    loadCustomStations();
+    renderRadioList();
+    on('stationSelect', 'change', function (e) { e.stopPropagation(); loadAndPlayRadio(Number(e.target.value)); });
+    radioAudio.addEventListener('playing', function () { isRadioPlaying = true; updateRadioUI('Now Playing'); });
+    radioAudio.addEventListener('waiting', function () { updateRadioUI('Loading...'); });
+    radioAudio.addEventListener('pause', function () { if (isRadioPlaying) { isRadioPlaying = false; updateRadioUI('Paused'); } });
+    radioAudio.addEventListener('error', function () { isRadioPlaying = false; updateRadioUI('Stream Error / Offline'); });
+    on('btn-radio-play', 'click', function (e) { e.stopPropagation(); toggleRadioPlayback(); });
+    on('btn-radio-prev', 'click', function (e) { e.stopPropagation(); loadAndPlayRadio(currentStationIndex - 1); });
+    on('btn-radio-next', 'click', function (e) { e.stopPropagation(); loadAndPlayRadio(currentStationIndex + 1); });
+    on('radio-volume', 'input', function (e) {
+      var v = clamp(Number(e.target.value), 0, 100);
+      radioAudio.volume = v / 100;
+      setText('radio-volume-label', v + '%');
+      if (v > 0 && radioAudio.muted) { radioAudio.muted = false; setText('btn-radio-mute', '🔊'); }
+    });
+    on('btn-radio-mute', 'click', function (e) {
+      e.stopPropagation();
+      radioAudio.muted = !radioAudio.muted;
+      setText('btn-radio-mute', radioAudio.muted ? '🔇' : '🔊');
+    });
+    on('btn-radio-add-toggle', 'click', function (e) { e.stopPropagation(); addRow?.classList.toggle('hide'); urlIn?.focus(); });
+    var addFromInputs = function () {
+      if (addCustomStation(urlIn?.value || '', titleIn?.value || '')) {
+        if (urlIn) urlIn.value = '';
+        if (titleIn) titleIn.value = '';
+        addRow?.classList.add('hide');
+      }
+    };
+    on('btn-radio-add', 'click', function (e) { e.stopPropagation(); addFromInputs(); });
+    [urlIn, titleIn].forEach(function (el) {
+      el?.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addFromInputs(); } });
+    });
+    on('btn-radio-clear', 'click', function (e) {
+      e.stopPropagation();
+      if (!customStations.length) return;
+      var wasCustom = currentStationIndex >= defaultStations.length;
+      customStations = [];
+      saveCustomStations();
+      rebuildStations();
+      if (wasCustom) { currentStationIndex = 0; if (isRadioPlaying) { loadAndPlayRadio(0); return; } }
+      updateRadioUI();
+    });
+    updateRadioUI('Stopped');
+  }
+  function setupAudioTabs() {
+    function switchTab(t) {
+      var r = t === 'radio';
+      $('tabBtnRadio')?.classList.toggle('active', r);
+      $('tabBtnYoutube')?.classList.toggle('active', !r);
+      $('tabContentRadio')?.classList.toggle('active', r);
+      $('tabContentYoutube')?.classList.toggle('active', !r);
+    }
+    on('tabBtnRadio', 'click', function (e) { e.stopPropagation(); switchTab('radio'); });
+    on('tabBtnYoutube', 'click', function (e) { e.stopPropagation(); switchTab('youtube'); });
+  }
+  function setupMiniAudioPill() {
+    var yt = function () { return activeAudioSource === 'youtube'; };
+    on('btn-mini-prev', 'click', function (e) { e.stopPropagation(); yt() ? playPrevMusic() : loadAndPlayRadio(currentStationIndex - 1); });
+    on('btn-mini-play', 'click', function (e) { e.stopPropagation(); yt() ? toggleMusicPlayback() : toggleRadioPlayback(); });
+    on('btn-mini-next', 'click', function (e) { e.stopPropagation(); yt() ? playNextMusic(true) : loadAndPlayRadio(currentStationIndex + 1); });
+    on('btn-mini-open', 'click', function (e) {
+      e.stopPropagation();
+      menu.classList.add('open');
+      $(yt() ? 'tabBtnYoutube' : 'tabBtnRadio')?.click();
+      updateMiniPill();
+    });
+    on('btn-mini-close', 'click', function (e) { e.stopPropagation(); miniPillDismissed = true; updateMiniPill(); });
   }
 
   /* ================= GIGI / BIJI WIJEN (HEALTH) ================= */
@@ -471,7 +777,9 @@
   var cheesePhase = 0;
 
   function drawCheese() {
-    cheeseRpm += (S.rpm - cheeseRpm) * 0.14;
+    var target = S.rpm, nowT = performance.now();
+    if (bootUntil > nowT) target = Math.sin((1 - (bootUntil - nowT) / 900) * Math.PI) * MAX_RPM; // boot sweep
+    cheeseRpm += (target - cheeseRpm) * 0.14;
     var n = clamp(cheeseRpm / MAX_RPM, 0, 1);
     cheesePhase += 0.04 + n * 0.22;
 
@@ -509,9 +817,13 @@
   }
 
   function renderHeadlights() {
-    var on = S.lights !== 0;
-    $('headlightIndicator').classList.toggle('active', on);
+    var el = $('headlightIndicator');
+    if (el) {
+      el.className = 'vehicle-indicator' + (S.lights === 1 ? ' active low-beam' : (S.lights === 2 ? ' active high-beam' : ''));
+      el.title = 'Headlights: ' + (S.lights === 1 ? 'Low Beam' : (S.lights === 2 ? 'High Beam' : 'Off'));
+    }
     setText('headlightLabel', S.lights === 2 ? 'HIGH' : (S.lights === 1 ? 'LOW' : 'LIGHT'));
+    cockpit.classList.toggle('night-mode', S.lights !== 0);
   }
 
   function renderIndicators() {
@@ -525,21 +837,47 @@
 
   function renderOdometer() {
     setText('odometerValue', Math.max(0, S.odo).toFixed(1).padStart(8, '0'));
+    setText('odoUnit', S.speedMode === 0 ? 'KM' : 'MI');
+  }
+
+  function updateEngineIconState() {
+    var icon = $('engineCheck');
+    if (!icon) return;
+    var cls = 'vehicle-indicator';
+    if (S.engine) cls += S.health <= 20 ? ' active danger' : (S.health < 50 ? ' active warn' : ' active');
+    icon.className = cls;
   }
 
   function renderEngine() {
-    var iconEngine = $('engineCheck');
-    if (iconEngine) {
-      iconEngine.className = 'vehicle-indicator' + (S.engine ? ' active danger' : '');
-    }
-    // Mesin mati: mata terpejam istirahat
+    if (!prevEngine && S.engine) bootUntil = performance.now() + 900;
+    prevEngine = S.engine;
     cockpit.classList.toggle('engine-off', !S.engine);
+    updateEngineIconState();
+    updateBeltBeep();
+  }
+
+  function renderDoorLock() {
+    var icon = $('doorLockIcon'), shackle = $('lockShackle');
+    if (!icon || !shackle) return;
+    icon.classList.toggle('locked', S.locked);
+    icon.classList.toggle('unlocked', !S.locked);
+    icon.title = S.locked ? 'Doors: Locked' : 'Doors: Unlocked';
+    shackle.setAttribute('d', S.locked ? 'M7 11V7a5 5 0 0 1 10 0v4' : 'M7 11V7a5 5 0 0 1 9.9-1');
+    if (prevLocked !== null && prevLocked !== S.locked) {
+      icon.classList.remove('lock-snap');
+      void icon.offsetWidth;
+      icon.classList.add('lock-snap');
+      clearTimeout(lockSnapTimer);
+      lockSnapTimer = setTimeout(function () { icon.classList.remove('lock-snap'); }, 360);
+    }
+    prevLocked = S.locked;
   }
 
   function renderSeatbelt() {
     var iconBelt = $('seatbeltIndicator');
     if (iconBelt) {
-      iconBelt.className = 'vehicle-indicator' + (!S.belt ? ' active danger' : '');
+      iconBelt.className = 'vehicle-indicator' + (!S.belt ? ' active danger unbuckled' : ' buckled');
+      iconBelt.title = S.belt ? 'Seatbelt: Buckled' : 'Seatbelt: Unbuckled';
     }
     cockpit.classList.toggle('belt-unfastened', !S.belt);
   }
@@ -550,13 +888,21 @@
     var bar = $('fuelBar');
     if (bar) {
       bar.style.width = fuelClamped + '%';
-      bar.classList.toggle('critical', fuelClamped <= 15);
+      bar.classList.toggle('critical', fuelClamped <= 20);
     }
-    cockpit.classList.toggle('fuel-critical', fuelClamped <= 15);
+    cockpit.classList.toggle('fuel-critical', fuelClamped <= 20);
   }
 
   function renderHealth() {
     var h = clamp(S.health, 0, 100);
+    if (prevHealth - h >= 2) {
+      cockpit.classList.remove('impact-flash');
+      void cockpit.offsetWidth;
+      cockpit.classList.add('impact-flash');
+      clearTimeout(impactTimer);
+      impactTimer = setTimeout(function () { cockpit.classList.remove('impact-flash'); }, 500);
+    }
+    prevHealth = h;
     setText('healthValue', Math.round(h) + '%');
 
     var keep = toothCountForHealth(h);
@@ -568,6 +914,8 @@
     cockpit.classList.toggle('hurt', h < 80);               // plester + noda saus
     cockpit.classList.toggle('weak', h < 20);               // mulut gemetar lemas
     cockpit.classList.toggle('health-critical', h <= 15);
+    cockpit.classList.toggle('health-low', h <= 20);
+    updateEngineIconState();
   }
 
   function render() {
@@ -579,6 +927,7 @@
     renderOdometer();
     renderEngine();
     renderSeatbelt();
+    renderDoorLock();
     renderFuel();
     renderHealth();
   }
@@ -661,7 +1010,24 @@
     S.belt = Boolean(seatbeltState);
     if (elements.seatbelts) elements.seatbelts.innerText = onOrOff(seatbeltState);
     renderSeatbelt();
+    updateBeltBeep();
   };
+
+  function setDoorLock(state) {
+    if (typeof state === 'string') {
+      var n = state.trim().toLowerCase();
+      S.locked = n === 'true' || n === '1' || n === 'locked' || n === 'lock';
+    } else if (typeof state === 'number') {
+      S.locked = state >= 1;
+    } else {
+      S.locked = Boolean(state);
+    }
+    renderDoorLock();
+  }
+  window.setDoorLock = setDoorLock;
+  window.setLocked = setDoorLock;
+  window.setVehicleLock = setDoorLock;
+  window.setDoorsLocked = setDoorLock;
 
   window.setSpeedMode = function (modeVal) {
     var m = String(modeVal).toLowerCase();
@@ -669,6 +1035,7 @@
     else if (m === 'knots' || m === 'knot' || m === '2') S.speedMode = 2;
     else S.speedMode = 0;
     window.setSpeed(S.speedMS);
+    renderOdometer();
   };
 
   window.setOdometer = function (dist) {
@@ -745,7 +1112,7 @@
     } else if (act === 'theme') {
       L.theme = (L.theme + 1) % THEMES.length;
       applyLayout(); saveLayout();
-      hint.textContent = HINTS.theme;
+      hint.textContent = 'Tema: ' + THEME_NAMES[L.theme];
     }
   });
 
@@ -754,6 +1121,7 @@
       e.stopPropagation();
       menu.classList.remove('open');
       setMode(null);
+      updateMiniPill();
     });
   }
 
@@ -763,13 +1131,14 @@
     menu.classList.toggle('open', open);
     if (!open) setMode(null);
     else setMode(mode);
+    updateMiniPill();
   });
 
   var drag = null;
 
   cockpit.addEventListener('mousedown', function (e) {
     if (e.button !== 0 || !mode) return;
-    if (e.target.closest('#settingsMenu')) return;
+    if (e.target.closest('#settingsMenu') || e.target.closest('#mini-music-pill')) return;
     e.preventDefault();
     drag = { x: e.clientX, y: e.clientY, tx: L.tx, ty: L.ty, scale: L.scale };
   });
@@ -805,10 +1174,14 @@
   loadLayout();
   clampLayout();
   setMode(null);
+  setupAudioTabs();
+  setupRadioPlayer();
+  setupMiniAudioPill();
   setupMusicPlayer();
   requestAnimationFrame(drawCheese);
 
   window.setEngine(false);
+  window.setSpeedMode('kmh');
   window.setSpeed(0);
   window.setRPM(0);
   window.setFuel(100);
@@ -818,6 +1191,7 @@
   window.setLeftIndicator(false);
   window.setRightIndicator(false);
   window.setSeatbelts(false);
+  window.setDoorLock(false);
   window.setOdometer(0);
 
   window.addEventListener('message', function (ev) {
@@ -837,6 +1211,10 @@
       rightIndicator: 'setRightIndicator',
       seatbelts: 'setSeatbelts',
       seatbelt: 'setSeatbelts',
+      locked: 'setDoorLock',
+      doorLock: 'setDoorLock',
+      doorsLocked: 'setDoorLock',
+      vehicleLock: 'setDoorLock',
       speedMode: 'setSpeedMode',
       odometer: 'setOdometer'
     };
